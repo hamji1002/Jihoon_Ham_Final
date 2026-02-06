@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOST : PROMPTS</title>
+
+  <style>
+    :root{
+      --bg:#000;
+      --fg:#fff;
+      --line:rgba(255,255,255,0.14);
+      --yellow:#ffff00;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      padding:20px;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size:2rem;
+      line-height:1.2;
+      height:100vh;
+      opacity:0;
+      animation: fadeIn 900ms forwards;
+      overflow:hidden;
+    }
+    @keyframes fadeIn{ to{ opacity:1; } }
+
+    /* 12-col */
+    .grid-wrapper{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: repeat(7, 1fr);
+      height:90%;
+      gap:10px;
+      align-items:start;
+    }
+
+    .text-block{
+      padding:10px 0;
+      border-bottom:1px solid transparent;
+      transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+      word-break:break-word;
+    }
+
+    .text-input{
+      width:100%;
+      padding:5px 0;
+      border:none;
+      background:transparent;
+      color:var(--fg);
+      font:inherit;
+      resize:none;
+      outline:none;
+      line-height:1.2;
+    }
+
+    .text-input::placeholder{
+      color:rgba(255,255,255,0.35);
+    }
+    .text-block.swap{
+      cursor:pointer;
+    }
+
+      #prompt-1{ grid-column: 1 / span 6; grid-row: 1; }
+      #prompt-2{ grid-column: 4 / span 5; grid-row: 2; text-align:left; }
+      #prompt-3{ grid-column: 2 / span 6; grid-row: 4; }
+      #prompt-4{ grid-column: 6 / span 6; grid-row: 4; text-align:right; }
+      #prompt-5{ grid-column: 1 / span 8; grid-row: 6; text-align:center; }
+      #prompt-6{ grid-column: 7 / span 8; grid-row: 7; text-align:left; }
+      #prompt-7{ grid-column: 9 / span 6; grid-row: 3;
+      justify-self:start;
+      align-self:start;
+      max-width:22rem;
+      text-align:left;
+      margin-top:-6px;
+    }
+
+    .text-block.swap:hover{
+      background:var(--fg);
+      color:var(--bg);
+      border-bottom-color:var(--fg);
+    }
+    .text-block.swap:active{
+      background:var(--yellow);
+      color:var(--bg);
+    }
+
+    /* bottom nav */
+    .bottom-nav{
+      position:fixed;
+      left:20px;
+      right:20px;
+      bottom:18px;
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      font-family:'Courier New', monospace;
+      font-size:0.9rem;
+      letter-spacing:0.10em;
+      text-transform:uppercase;
+      z-index:10;
+    }
+
+    .btn{
+      background:transparent;
+      color:var(--fg);
+      border:1px solid var(--line);
+      padding:8px 12px;
+      cursor:pointer;
+      text-transform:uppercase;
+      letter-spacing:0.10em;
+      font-family:'Courier New', monospace;
+      font-size:0.82rem;
+      transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+      white-space:nowrap;
+    }
+    .btn:hover{
+      background:var(--fg);
+      color:var(--bg);
+      border-color:var(--fg);
+    }
+    /* Hidden print */
+    #print-area{
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 58mm;
+      padding: 20mm 20mm;
+      background: #fff;
+      color: #000;
+      font-family:Arial, Helvetica, sans-serif;
+      font-size:18px;
+      line-height:1.4;
+    }
+    .print-reflection{
+      margin-top:12px;
+      margin-right:12px;
+      font-size:18px;
+      line-height:1.5;
+      white-space:normal;
+      overflow-wrap:anywhere;
+    }
+    .print-separator{
+      border-bottom:1px dashed #000;
+      margin:10px 0;
+    }
+
+    @media print{
+      @page { margin: 0; size: auto; }
+
+      body{
+        background: #fff;
+        height: auto;
+        overflow: visible;
+        opacity: 1 !important;
+        animation: none !important;
+      }
+
+      .grid-wrapper,
+      .bottom-nav{
+        display: none !important;
+      }
+
+      #print-area{
+        /* Swap to normal flow while printing. */
+        position: static !important;
+        left: 0 !important;
+        visibility: visible;
+        width: 80%;
+        padding: 20px 34px;
+      }
+
+      #print-area *{
+        max-width:100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="grid-wrapper">
+    <div class="text-block swap" id="prompt-1" data-pool-index="0">I don't know what to make.</div>
+    <div class="text-block swap" id="prompt-2" data-pool-index="1">So I first collected references.</div>
+    <div class="text-block swap" id="prompt-3" data-pool-index="2">So I scrolled for hours.</div>
+    <div class="text-block" id="prompt-4">So I waited.</div>
+    <div class="text-block swap" id="prompt-5" data-pool-index="3">Started again.</div>
+    <div class="text-block" id="prompt-6">What do you do when you feel lost?</div>
+    <textarea class="text-input" id="prompt-7" rows="2" placeholder="Type here..."></textarea>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="btn" id="print-btn"> PRINT </button>
+    <button class="btn" id="next-btn">RETURN</button>
+  </div>
+
+  <div id="print-area">
+    <div>LOST : NOTE</div>
+    <div class="print-separator"></div>
+    <div>NOTE:</div>
+    <br>
+    <div id="p-line-1"></div>
+    <div id="p-line-2"></div>
+    <div id="p-line-3"></div>
+    <div id="p-line-4"></div>
+    <div id="p-line-5"></div>
+    <div id="p-line-6"></div>
+    <div id="p-line-7"></div>
+    <br>
+    <div class="print-separator"></div>
+    <div>Keep this receipt.<br>It is the only thing<br>you made today.</div>
+    <div class="print-separator"></div>
+    <div class="print-reflection">시작하려고 앉았다가도 손이 먼저 멈춰서고 멈춘 손이 이상하게 낯설어져서 손을 내려다보는 동안 시간이 지나가요 시간이 지나가면 더 조급해지고 조급해지면 더 안 움직여요 이게 게으름일까요 아니면 더는 못 하겠다는 신호일까요 신호를 신호로 두지 못하고 자꾸 판결문으로 바꿔 읽는 버릇일까요 해야 할 일들은 줄을 서서 기다리는데 그 앞에 서면 이름이 지워져요 해야 할 것과 하고 싶은 것이 섞여서 글자가 번져요 번진 글자를 손끝으로 만지면 더 번질 것 같아서 그냥 덮어버려요 덮는다고 사라지나요 사라지는 대신 남아 있는 감각만 더 선명해져요 보이지 않는 게 더 또렷해지는 날이 있죠 정리하려고 하면 생각이 더 늘어나요 풀어야 하는 건 많은데 어디부터 잡아야 할지 모르겠어요 한 가닥을 잡는 순간 다른 가닥이 같이 따라 나오고 끝이 아니라 시작만 계속 늘어나요 그래서 오늘은 손을 덜 대면 될까요 자꾸 만지면 더 엉킬까 봐요 그냥 이 상태로 하루를 통과해도 될까요 통과한다는 말이 너무 단순할까요 단순한 말만 겨우 붙잡히는 날도 있나요 밖은 조용한데 안은 조용하지 않아요 아무도 재촉하지 않는데 먼저 재촉하는 말이 있어요 “이 정도는 해야지” “이 정도도 못 해” 문장들이 남아 있어요 그 문장들은 어디서 왔을까요 누가 처음 읽어줬을까요 처음엔 남의 말이었는데 어느 순간부터 내 말처럼 굴러다니는 걸까요 내 말이 된 순간부터 더 세졌을까요 더 자주 돌아왔을까요 사람이란 뭘까요 성과가 있어야 사람인가요 움직여야 사람인가요 증명해야 사람인가요 아니면 그냥 숨 쉬는 것만으로도 이미 사람일까요 인간이 스스로를 평가하는 순간부터 삶이 도덕이 되고 도덕이 되면 하루가 점수표가 되죠 점수표가 되는 순간 숨은 어디로 가요 숨은 그냥 숨인데 왜 숨까지 채점받나요기준은 언제나 옳은 얼굴을 하고 오죠 그래서 더 의심이 늦어요 기준이 오면 일단 고개가 끄덕여져요 그다음에야 숨이 막히고 그제야 알아채요 지금 받아든 건 기준이 아니라 채점지였다는 걸요 채점지는 왜 이렇게 얇을까요 얇아서 더 날카로운 걸까요 얇은 종이 하나가 사람을 이렇게 쉽게 베어도 되나요 말이 필요할 때가 있어요 그런데 말이 커지는 순간 하루가 더 어려워져요 그래서 큰 말이 아니라 작은 말이 먼저 나와요 “그냥 지나가자” “오늘은 여기까지” “지금은 이만큼” 이 말들은 다짐일까요 아니면 면피일까요 면피라면 왜 이렇게 간절하죠 간절한데도 왜 자꾸 부족해지죠 부족하다는 말은 어디서 이렇게 쉽게 붙을까요 부족은 원래부터 있었던 걸까요 아니면 자꾸 불리다가 몸에 들러붙은 걸까요 설명하려고 하면 설명할수록 더 멀어져요 말로 옮기는 순간 다른 사람이 되는 것 같아요 말이 너무 깔끔해지면 거짓말 같고 말이 너무 엉키면 무능해 보일까 봐 겁나요 그래서 아무 말도 안 하면 덜 부끄러울까요 덜 부끄러우면 덜 아플까요 그런데 아무 말도 안 하면 안이 더 커져요 커진 안을 어떻게 해야 해요 그대로 두면 터질까요 그대로 두면 가라앉을까요 가라앉는 건 사라지는 걸까요 아니면 밑바닥에 쌓여서 더 단단해지는 걸까요 질문이 필요해서 질문을 하는 게 아니라 질문을 하면 덜 무너질 것 같아서 질문을 해요 정답을 원해서가 아니라 정답이 있다는 기분을 잠깐 빌리고 싶어서요 그런데 정답은 어디에도 없고 질문만 남아요 남는 질문은 바닥에 놓여요 놓인 질문은 걸리적거릴까요 걸려 넘어질까요 넘어지면 차라리 쉬게 될까요 쉬는 게 가능하면 왜 쉬는 게 두려울까요 두려움은 언제 이렇게 일상적인 표정을 하게 됐을까요 대단한 사건이 없어도 늘 옆에 붙어 있어요 책상에 앉아도 붙고 씻을 때도 붙고 잠들기 직전에도 붙어요 두려움은 왜 자꾸 성실함과 닮은 얼굴을 할까요 성실하다는 말은 언제부터 겁의 다른 이름이 됐나요 의미 같은 말은 크게 꺼내는 순간 얇아져요 그래서 의미는 그대로 두고 오늘은 그냥 남아 있는 것만 보려고 해요 끝이 없는 날이 있다는 사실을요 도착 같은 걸 말하지 않아도 몸은 알아요 끝이 없다는 건 정말 아무것도 없다는 뜻일까요 아니면 아직 닿지 않았다는 뜻일까요 아직이라는 말은 위로가 되나요 아니면 또 다른 숙제인가요 숙제는 왜 늘 사람이 되기 위한 증명이 될까요 증명이 없으면 사람은 사라지나요 사라지지 않는다면 왜 계속 증명을 하려 들까요 증명이라는 말이 나오면 갑자기 모든 게 시험처럼 변해요 같은 행위도 다른 얼굴을 해요 앉는 것도 쓰는 것도 씻는 것도 다 제출물 같아져요 제출이 없으면 손이 허공에 떠요 허공에 뜬 손은 무엇을 잡아야 하나요 잡을 것이 없으면 그냥 내려놓으면 되나요 내려놓는다는 건 왜 늘 실패처럼 들릴까요 빈 종이가 떠올라요 아무도 써주지 않은 곳에 자꾸 눈이 가요 글자가 없다는 게 허무한가요 아니면 아직이라는 뜻인가요 아직이라는 말은 왜 자꾸 거창해질까요 거창해지면 숨이 막혀요 그러면 아주 작은 질문만 남아요 아직 쓰이지 않은 것은 언제나 두려운가요 아직 쓰이지 않은 것은 언제나 열려 있나요 열려 있다면 그 앞에서 왜 자꾸 작아질까요 작은 몸으로 큰 시간을 어떻게 만나야 해요 믿는다는 말도 크게 말하면 낯설어져요 그래서 믿음 대신 습관이라고 부르고 싶어요 내일을 믿는 게 아니라 내일이 오면 다시 한 번 앉아보겠다는 습관 다시 한 번 열어보겠다는 습관 다시 한 번 멈추더라도 다시 한 번이라는 습관 그게 버티기일까요 버티기라면 나쁘나요 버티기만으로도 하루는 지나가나요 지나간다는 건 살아 있다는 뜻인가요 살아 있다는 뜻은 충분한가요 오늘은 단어가 너무 커요 큰 말이 먼저 와서 몸을 가려요 “포기” “의지” 같은 말은 지금 상태를 말하기보다 상태를 재판해요 재판을 열지 않고도 하루를 살 수 있을까요 그냥 어려웠다고만 말하면 될까요 어려웠다는 말이 약하면 어떡하죠 약하다고 해서 거짓인가요 거짓이 아니라면 약한 말로도 견딜 수 있나요 아무것도 해결하지 못한 채로 잠들어도 될까요 미뤄둔 것들이 내일도 그대로일 텐데 그 사실을 알고도 눈을 감아도 될까요 내일의 그대로가 오늘의 죄가 될까요 아니면 내일의 그대로는 내일의 일일까요 오늘의 몸은 오늘의 몫만 가져도 될까요 오늘의 몫을 다 못하면 그건 빚이 될까요 아니면 그냥 남는 걸까요 남는다는 건 왜 늘 죄책감 쪽으로 먼저 기울까요 버리지 않는다는 건 거창한 결심이 아니라 아주 작은 중단일까요 오늘만은 자신을 덜 몰아세우는 것 오늘만은 판결을 미루는 것 오늘만은 손을 내려놓는 것 그 정도로도 살아남는 방식이라고 불러도 될까요 살아남는 방식이 예쁘지 않아도 될까요 예쁘지 않으면 덜 가치가 있나요 가치가 있다는 말도 왜 이렇게 쉽게 사람을 괴롭히나요 끝까지 잘하고 싶다는 마음이 제일 먼저 사람을 어렵게 만들 때가 있어요 잘하고 싶다는 마음은 좋은 얼굴을 하고 들어오는데 들어오자마자 문을 잠가요 문이 잠기면 밖이 아니라 안에서 오래 서성여요 서성인다는 건 움직이는 걸까요 멈춘 걸까요 움직이는 척하는 멈춤도 멈춤인가요 어떤 날은 다짐이 아니라 조건만 남아요 오늘은 이만큼만 할 수 있다는 조건 오늘은 여기까지밖에 못 간다는 조건 조건은 왜 늘 변명처럼 들릴까요 조건을 세우는 건 포기가 아니라 질서일까요 질서라면 왜 이렇게 비난받나요 질서가 없으면 무너지는데 질서를 세우면 또 죄가 되는 걸까요 오늘은 그냥 이 상태로 통과해도 될까요 통과한 뒤에 남는 게 아무것도 없어도 될까요 아무것도 없어도 살아 있다는 사실은 남을까요 그 사실 하나로도 다음 날의 문이 열릴까요 아니면 다음 날도 같은 질문이 먼저 서 있을까요 같은 질문이 서 있어도 다시 앉을 수 있을까요 다시 앉는다는 것만으로도 충분할까요</div>
+  </div>
+
+  <script>
+    const NEXT_PAGE = "index.html";
+    // Alternate text for each sentence block.
+    const narrativePools = [
+      ["I didn't know what to make.", "I had nothing to say.", "The idea was gone.", "I wondered if I'd be able to make anything in the end."],
+      ["So I collected images.", "So I went for a walk.", "So I listened to music.", "So I read everything.", "So I wrote everything."],
+      ["So I scrolled for hours.", "So I felt paralyzed.", "So I lost the sense of time.", "So I imitated others.", "So I got tired."],
+      ["Start again.", "Change ideas.", "Maybe tomorrow.", "Just one more.", "Delete everything."]
+    ];
+    const lineIds = ["prompt-1", "prompt-2", "prompt-3", "prompt-4", "prompt-5", "prompt-6", "prompt-7"];
+    const lineNodes = lineIds.map((id) => document.getElementById(id));
+    const printNodes = Array.from({ length: 7 }, (_, i) => document.getElementById(`p-line-${i + 1}`));
+    const swapBlocks = document.querySelectorAll(".text-block.swap");
+    const printBtn = document.getElementById("print-btn");
+    const nextBtn = document.getElementById("next-btn");
+
+    function swapText(element){
+      const poolIndex = Number(element.dataset.poolIndex);
+      const pool = narrativePools[poolIndex];
+      if (!pool || pool.length < 2) return;
+
+      const newText = pool[Math.floor(Math.random() * pool.length)];
+      element.innerText = newText;
+    }
+
+    function getCurrentLines(){
+      // Last line - textarea;;
+      return lineNodes.map((node, index) => (
+        index === lineIds.length - 1 ? node.value : node.innerText
+      ));
+    }
+
+    function printNote(){
+      // Mirror current screen text into the hidden receipt before printing.
+      const lines = getCurrentLines();
+      lines.forEach((line, i) => { printNodes[i].innerText = line; });
+      window.print();
+    }
+
+    function goNext(){
+      document.body.style.transition = "opacity 700ms";
+      document.body.style.opacity = "0";
+      setTimeout(() => window.location.href = NEXT_PAGE, 700);
+    }
+
+    swapBlocks.forEach((block) => {
+      block.addEventListener("click", () => swapText(block));
+    });
+
+    printBtn.addEventListener("click", printNote);
+    nextBtn.addEventListener("click", goNext);
+  </script>
+</body>
+</html>

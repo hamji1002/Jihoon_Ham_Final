@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOST / REFERENCE</title>
+  <style>
+    :root{
+      --bg:#050505;
+      --fg:#fff;
+      --dim:rgba(255,255,255,0.36);
+      --line:rgba(255,255,255,0.10);
+    }
+
+    *{ box-sizing:border-box; }
+
+    html, body{
+      margin:0;
+      height:100%;
+      overflow:hidden;
+      user-select:none;
+      cursor:none;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+      opacity:0;
+      animation:fadeIn 700ms forwards;
+    }
+    @keyframes fadeIn { to { opacity:1; } }
+
+    .scanline{
+      position:fixed; inset:0; pointer-events:none; z-index:1;
+      opacity:0.08;
+      background:linear-gradient(rgba(255,255,255,0.02) 50%, rgba(0,0,0,0) 50%);
+      background-size:100% 2px;
+      mix-blend-mode:screen;
+      transition:opacity 0.4s ease;
+    }
+
+    header{
+      position:fixed; top:0; left:0; right:0;
+      padding:18px 18px 14px;
+      border-bottom:1px solid var(--line);
+      background:rgba(0,0,0,0.85);
+      z-index:40;
+      pointer-events:none;
+      mix-blend-mode:exclusion;
+    }
+    .title{
+      font-size:0.82rem;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+    }
+
+    #reference-layer{
+      position:fixed; inset:0; z-index:5;
+      pointer-events:none;
+    }
+
+    .ref-img{
+      position:absolute;
+      display:block;
+      transform:translate(-50%, -50%);
+      pointer-events:none;
+      background:#111;
+      aspect-ratio:4/3;
+      object-fit:cover;
+      opacity:0.98;
+      transition:filter 0.3s, opacity 0.3s;
+    }
+
+    .decay-light{ opacity:0.86; filter:saturate(0.90) contrast(1.05); }
+    .decay-medium{ opacity:0.66; filter:blur(0.7px) saturate(0.70) contrast(1.12); }
+    .decay-heavy{ opacity:0.46; filter:blur(1.3px) saturate(0.55) contrast(1.22); mix-blend-mode:lighten; }
+    .decay-gone{ opacity:0.24; filter:blur(2.4px) contrast(1.32); mix-blend-mode:screen; }
+
+    .center{
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%, -50%);
+      width:min(920px, 92vw);
+      z-index:30;
+      mix-blend-mode:exclusion;
+      pointer-events:none;
+      text-align:center;
+    }
+
+    .narrative-text{
+      font-size:clamp(24px, 3vw, 42px);
+      line-height:1.1;
+      letter-spacing:-0.02em;
+      font-weight:500;
+    }
+
+    .narrative-sub{
+      margin-top:14px;
+      font-family:"Courier New", monospace;
+      font-size:0.82rem;
+      letter-spacing:0.12em;
+      color:var(--dim);
+      text-transform:uppercase;
+    }
+
+    .exposure{
+      position:fixed; inset:0;
+      background:#fff;
+      opacity:0;
+      pointer-events:none;
+      z-index:60;
+      transition:opacity 0.9s ease-in;
+    }
+
+    .cursor{
+      position:fixed;
+      width:42px; height:42px;
+      transform:translate(-50%,-50%);
+      pointer-events:none;
+      z-index:9999;
+      mix-blend-mode:difference;
+    }
+    .cursor:before, .cursor:after{
+      content:"";
+      position:absolute;
+      top:50%; left:50%;
+      background:#fff;
+      opacity:0.9;
+      transform:translate(-50%,-50%);
+    }
+    .cursor:before{ width:40px; height:1px; }
+    .cursor:after{ width:1px; height:40px; }
+    .cursor .box{
+      position:absolute;
+      top:50%; left:50%;
+      width:10px; height:10px;
+      border:1px solid rgba(255,255,255,0.85);
+      transform:translate(-50%,-50%);
+    }
+
+    body.level-1 .scanline{ opacity:0.10; }
+    body.level-2 .scanline{ opacity:0.13; }
+    body.level-3 .scanline{ opacity:0.16; }
+
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+
+  <header>
+    <div class="title">Lost / Reference</div>
+  </header>
+
+  <div id="reference-layer"></div>
+
+  <div class="center">
+    <div class="narrative-text" id="narrative-text">Click to find a reference.</div>
+    <div class="narrative-sub" id="narrative-sub">CLICK TO KEEP GOING.</div>
+  </div>
+
+  <div class="exposure" id="exposure"></div>
+  <div class="cursor" id="cursor"><div class="box"></div></div>
+
+  <script>
+    const NEXT_PAGE = "walk.html";
+    const LIMIT = 30;
+    const ASSETS = [
+      "assets/1.jpg", "assets/2.jpg", "assets/3.jpg", "assets/4.jpg", "assets/5.jpg", "assets/6.jpg",
+      "assets/7.jpg", "assets/8.jpg", "assets/9.jpg", "assets/10.jpg", "assets/11.jpg", "assets/12.jpg",
+      "assets/13.jpg", "assets/14.jpg", "assets/15.jpg", "assets/16.jpg", "assets/17.jpg", "assets/18.jpg",
+      "assets/19.jpg", "assets/20.jpg", "assets/21.jpg", "assets/22.jpg"
+    ];
+
+    // Hold the final line briefly, then fade out to the walk page.
+    const END_HOLD_MS = 2200;
+    const END_FADE_MS = 700;
+    const END_REDIRECT_MS = END_HOLD_MS + END_FADE_MS;
+
+    const narrativeText = document.getElementById("narrative-text");
+    const narrativeSub = document.getElementById("narrative-sub");
+    const referenceLayer = document.getElementById("reference-layer");
+    const exposure = document.getElementById("exposure");
+    const cursor = document.getElementById("cursor");
+    const bgm = new Audio("assets/feed.mp3");
+    bgm.loop = true;
+    bgm.volume = 0.4;
+
+    let attempts = 0;
+    let movedOn = false;
+    let audioStarted = false;
+
+    function startBgm() {
+      // Start only once on user click
+      if (audioStarted) return;
+      const playPromise = bgm.play();
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise.then(() => {
+          audioStarted = true;
+        }).catch(() => {
+          audioStarted = false;
+        });
+        return;
+      }
+      audioStarted = true;
+    }
+
+    const rand = (min, max) => Math.random() * (max - min) + min;
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+    const safeY = (y) => clamp(y, 110, window.innerHeight - 60);
+
+
+    window.addEventListener("mousemove", (e) => {
+      cursor.style.left = e.clientX + "px";
+      cursor.style.top = e.clientY + "px";
+    });
+
+    function setNarrative(text, subText) {
+      narrativeText.textContent = text;
+      narrativeSub.textContent = subText;
+    }
+
+    function updateNarrative() {
+      // Input-count... each range shifts the sentence.
+      if (attempts === 0) {
+        setNarrative("Click to find a reference.", "CLICK TO KEEP GOING.");
+        return;
+      }
+      if (attempts < 3) {
+        setNarrative("I look for a reference.", "NOT THIS.");
+        return;
+      }
+      if (attempts < 6) {
+        setNarrative("Not this either.", "KEEP LOOKING.");
+        return;
+      }
+      if (attempts < 10) {
+        setNarrative("Almost.", "I SAVE IT ANYWAY.");
+        return;
+      }
+      if (attempts < 15) {
+        setNarrative("I'm not sure though...", "CLICK.");
+        return;
+      }
+      if (attempts < 19) {
+        setNarrative("It starts to pile up.", "STILL CLICKING.");
+        return;
+      }
+      if (attempts < 22) {
+        setNarrative("The pile starts to decide for me.", "TRY AGAIN.");
+        return;
+      }
+      if (attempts < 25) {
+        setNarrative("It's getting a bit overwhelming..", "TOO MANY.");
+        return;
+      }
+      if (attempts < 28) {
+        setNarrative("I can't see anything.", "STOP.");
+        return;
+      }
+      if (attempts < LIMIT) {
+        setNarrative("Still clicking.", "STOP.");
+        return;
+      }
+      setNarrative("I should go for a Walk.", "ENOUGH.");
+    }
+
+    function dropReferenceImage(x, y) {
+      // Drop one image per click and increase size as more cick.
+      const img = document.createElement("img");
+      const size = Math.round(rand(300, 540) + ((attempts / LIMIT) * 420));
+
+      img.className = "ref-img";
+      img.src = ASSETS[Math.floor(Math.random() * ASSETS.length)];
+      img.draggable = false;
+      img.style.width = size + "px";
+      img.style.left = x + "px";
+      img.style.top = safeY(y) + "px";
+      img.style.zIndex = 10 + attempts;
+
+      if (attempts >= 28) img.classList.add("decay-gone");
+      else if (attempts >= 22) img.classList.add("decay-heavy");
+      else if (attempts >= 16) img.classList.add("decay-medium");
+      else if (attempts >= 10) img.classList.add("decay-light");
+
+      referenceLayer.appendChild(img);
+    }
+
+    function registerInput(x, y) {
+      // Once we've hit the limit, stop taking input so the exit can finish cleanly.
+      if (attempts >= LIMIT) return;
+      startBgm();
+      attempts++;
+
+      dropReferenceImage(x, y);
+      updateNarrative();
+
+      if (attempts === 8) document.body.classList.add("level-1");
+      if (attempts === 16) document.body.classList.add("level-2");
+      if (attempts === 24) document.body.classList.add("level-3");
+
+      if (attempts > LIMIT - 5) {
+        const t = (attempts - (LIMIT - 5)) / 5;
+        exposure.style.opacity = clamp(t, 0, 1);
+      }
+
+      if (attempts >= LIMIT && !movedOn) {
+        movedOn = true;
+        // Fade audio and page separately for a softer exit.
+        setTimeout(() => {
+          const fadeOut = setInterval(() => {
+            if (bgm.volume > 0.05) bgm.volume -= 0.05;
+            else { bgm.pause(); clearInterval(fadeOut); }
+          }, 100);
+          document.body.style.transition = `opacity ${END_FADE_MS}ms ease`;
+          document.body.style.opacity = "0";
+        }, END_HOLD_MS);
+        setTimeout(() => { window.location.href = NEXT_PAGE; }, END_REDIRECT_MS);
+      }
+    }
+
+    window.addEventListener("mousedown", (e) => {
+      registerInput(e.clientX, e.clientY);
+    });
+
+    updateNarrative();
+  </script>
+</body>
+</html>

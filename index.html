@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOST? / START</title>
+  <style>
+    :root{
+      --bg:#000;
+      --fg:#fff;
+      --line:rgba(255,255,255,0.10);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      height:100vh;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+      overflow:hidden;
+      cursor:none;
+      opacity: 0;
+      animation: fadeIn 900ms forwards;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+
+    header{
+      position:fixed;
+      top:0; left:0; right:0;
+      padding:18px 18px 14px;
+      border-bottom:1px solid var(--line);
+      background:rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index:10;
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      pointer-events:none;
+      mix-blend-mode:exclusion;
+    }
+    .title{
+      font-size:0.82rem;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+    }
+
+    .center{
+      position:fixed;
+      top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:min(880px, 92vw);
+      z-index:5;
+      mix-blend-mode:exclusion;
+      pointer-events:none;
+    }
+    .narrative{
+      font-size:clamp(22px, 3.2vw, 40px);
+      font-weight:500;
+      letter-spacing:-0.02em;
+      line-height:1.08;
+    }
+    .narrative-sub{
+      margin-top:14px;
+      font-family:"Courier New", monospace;
+      font-size:0.85rem;
+      letter-spacing:0.08em;
+      color:rgba(255,255,255,0.34);
+      text-transform:uppercase;
+    }
+
+    .narrative.nav{
+      pointer-events:auto;
+      cursor:pointer;
+    }
+    .narrative.nav:hover{
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 6px;
+    }
+
+    .cursor{
+      position:fixed;
+      width:42px; height:42px;
+      transform:translate(-50%,-50%);
+      pointer-events:none;
+      z-index:9999;
+      mix-blend-mode:difference;
+    }
+    .cursor:before, .cursor:after{
+      content:"";
+      position:absolute;
+      top:50%; left:50%;
+      background:#fff;
+      opacity:0.9;
+      transform:translate(-50%,-50%);
+    }
+    .cursor:before{ width:40px; height:1px; }
+    .cursor:after{ width:1px; height:40px; }
+    .cursor .box{
+      position:absolute;
+      top:50%; left:50%;
+      width:10px; height:10px;
+      border:1px solid rgba(255,255,255,0.85);
+      transform:translate(-50%,-50%);
+    }
+
+    .blink{ animation: blink 90ms linear 1; }
+    @keyframes blink{ from{ filter: invert(1); } to{ filter: invert(0); } }
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title"> Lost / Start</div>
+  </header>
+
+  <div class="center">
+    <div class="narrative" id="narrative">
+      I try to start.<br/>
+      I don’t.
+    </div>
+    <div class="narrative-sub" id="narrative-sub">
+      DO SOMETHING. ANYTHING.
+    </div>
+  </div>
+
+  <div class="cursor" id="cursor"><div class="box"></div></div>
+
+  <script>
+    const NEXT_PAGE = "feed.html";
+
+    let attempts = 0;
+    let collectShown = false;
+    let nextUnlocked = false;
+
+    const cursor = document.getElementById("cursor");
+    window.addEventListener("mousemove", (e) => {
+      cursor.style.left = e.clientX + "px";
+      cursor.style.top = e.clientY + "px";
+    });
+
+    const narrative = document.getElementById("narrative");
+    const narrativeSub = document.getElementById("narrative-sub");
+
+    function enableNext(){
+      // nav to 피드 
+      if (nextUnlocked) return;
+      nextUnlocked = true;
+
+
+      narrative.classList.add("nav");
+      narrative.innerHTML = "ENTER FEED →";
+      narrativeSub.textContent = "CLICK TO CONTINUE.";
+
+      narrative.addEventListener("click", () => {
+        document.body.style.transition = "opacity 700ms";
+        document.body.style.opacity = "0";
+        setTimeout(() => { window.location.href = NEXT_PAGE; }, 700);
+      });
+    }
+
+    function registerAttempt() {
+      // Stop changing
+      if (nextUnlocked) return;
+
+      attempts++;
+
+      document.body.classList.add("blink");
+      setTimeout(() => document.body.classList.remove("blink"), 90);
+
+      if (attempts === 1) {
+        narrative.innerHTML = "I try to start.<br/>I can’t.";
+      } else if (attempts === 2) {
+        narrative.innerHTML = "I almost begin.<br/>Almost.";
+        narrativeSub.textContent = "TRY AGAIN.";
+      } else if (attempts === 3) {
+        narrative.innerHTML = "I know that if I don't get started now, I just won't be able to finish it";
+      } else if (attempts === 4) {
+        narrative.innerHTML = "However, I just cannot get started.";
+      } else if (attempts === 5) {
+        narrative.innerHTML = "Maybe... I should look for some references...";
+      } else if (attempts >= 6) {
+        // First time at 6: pivot line. Next input after that unlocks navigation.
+        if (!collectShown) {
+          collectShown = true;
+          narrative.innerHTML = "Nothing starts.<br/>So I collect.";
+          narrativeSub.textContent = "ENTER FEED.";
+          return;
+        }
+
+        enableNext();
+      }
+    }
+
+    // CLICK / TAP
+    window.addEventListener("mousedown", () => {
+      registerAttempt();
+    });
+
+    // KEYBOARD
+    window.addEventListener("keydown", (e) => {
+      if (["Shift","Alt","Meta","Control","Tab"].includes(e.key)) return;
+      registerAttempt();
+    });
+  </script>
+</body>
+</html>

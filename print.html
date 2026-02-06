@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>LOST / PRINT</title>
+  <style>
+    :root{
+      --bg:#000;
+      --ink:#fff;
+      --dim:rgba(255,255,255,0.45);
+      --line:rgba(255,255,255,0.15);
+      --paper:#f4f4f4;
+      --paper-ink:#111;
+      --paper-meta:#8e8e8e;
+      --paper-line:rgba(0,0,0,0.14);
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+      height:100vh;
+      overflow:hidden;
+      user-select:none;
+    }
+
+    .layout-grid{
+      height:100vh;
+      display:grid;
+      grid-template-columns:4fr 8fr;
+      padding:20px;
+      gap:20px;
+      transition:opacity 800ms ease;
+      will-change:opacity;
+    }
+
+    .narrative-panel{
+      padding:40px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      border-right:1px solid var(--line);
+    }
+
+    .panel-title{
+      font-family:"Courier New", monospace;
+      font-size:12px;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      color:var(--dim);
+      margin-bottom:28px;
+    }
+
+    .narrative-block{
+      font-size:clamp(16px, 1.5vw, 22px);
+      font-weight:300;
+      line-height:1.4;
+      max-width:380px;
+      color:rgba(255,255,255,0.9);
+    }
+
+    .narrative-line + .narrative-line{ margin-top:6px; }
+
+    .narrative-hint{
+      margin-top:38px;
+      font-family:"Courier New", monospace;
+      font-size:11px;
+      color:var(--dim);
+      text-transform:uppercase;
+      letter-spacing:0.1em;
+      animation:blink 2s infinite;
+    }
+    @keyframes blink { 50% { opacity:0.5; } }
+
+    .print-bed{
+      background:var(--paper);
+      position:relative;
+      overflow:hidden;
+      color:var(--paper-ink);
+      background-image:linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
+                       linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+      background-size:20px 20px;
+      border:1px solid rgba(0,0,0,0.08);
+    }
+
+    .crosshair-x, .crosshair-y{
+      position:absolute;
+      background:rgba(0,0,0,0.05);
+      pointer-events:none;
+      z-index:1;
+    }
+    .crosshair-x{ top:50%; left:0; width:100%; height:1px; }
+    .crosshair-y{ top:0; left:50%; width:1px; height:100%; }
+
+    .print-head{
+      position:absolute;
+      top:0; left:0; right:0;
+      height:60px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:0 20px;
+      border-bottom:1px solid var(--paper-line);
+      background:rgba(244,244,244,0.92);
+      z-index:4;
+    }
+    .project-title{
+      font-family:"Courier New", monospace;
+      font-size:11px;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+      color:#666;
+    }
+    .project-meta{
+      font-family:"Courier New", monospace;
+      font-size:10px;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+      color:var(--paper-meta);
+    }
+
+    .print-main{
+      position:absolute;
+      top:60px; left:0; right:0; bottom:82px;
+      padding:36px 42px 42px;
+      overflow-y:auto;
+      z-index:3;
+    }
+
+    .section-label{
+      font-family:"Courier New", monospace;
+      font-size:10px;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+      color:var(--paper-meta);
+      line-height:1.55;
+      margin-bottom:24px;
+    }
+
+    .line-item{
+      display:flex;
+      align-items:baseline;
+      padding:16px 0;
+      border-bottom:1px solid var(--paper-line);
+      animation:slideUp 0.24s ease-out;
+    }
+    @keyframes slideUp{
+      from{ opacity:0; transform:translateY(8px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+
+    .line-index{
+      font-family:"Courier New", monospace;
+      font-size:13px;
+      color:#555;
+      margin-right:18px;
+      letter-spacing:0.08em;
+    }
+
+    .line-text{
+      font-size:24px;
+      font-weight:400;
+      letter-spacing:-0.03em;
+      line-height:1.1;
+      color:var(--paper-ink);
+    }
+
+    .print-foot{
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height:82px;
+      border-top:1px solid var(--paper-line);
+      display:flex;
+      align-items:center;
+      padding:0 20px;
+      z-index:4;
+      background:rgba(244,244,244,0.92);
+    }
+
+    .prompt{
+      font-family:"Courier New", monospace;
+      font-size:14px;
+      margin-right:12px;
+      color:#444;
+    }
+
+    input{
+      flex:1;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--paper-ink);
+      font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size:16px;
+      text-transform:uppercase;
+    }
+    input::placeholder{ color:#b5b5b5; }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-left:20px;
+    }
+
+    button{
+      border:1px solid var(--paper-line);
+      background:#fff;
+      color:var(--paper-ink);
+      padding:8px 12px;
+      font-family:"Courier New", monospace;
+      font-size:10px;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+      cursor:pointer;
+      transition:background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+    button:hover{
+      background:var(--paper-ink);
+      color:#fff;
+      border-color:var(--paper-ink);
+    }
+
+    /* Hidden receipt template used only for window.print(). */
+    /* Receipt width*/
+    #print-area{
+      position:fixed;
+      left:-9999px;
+      top:0;
+      width:80mm;
+      padding:7mm 10mm;
+      background:#fff;
+      color:#000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size:12px;
+      line-height:1.4;
+    }
+    .print-headline{
+      text-align:center;
+      border-bottom:1px dashed #000;
+      padding-bottom:12px;
+      margin-bottom:18px;
+    }
+    .print-label{
+      margin-bottom:14px;
+    }
+    .print-separator{
+      border-bottom:1px dashed #000;
+      margin:24px 0;
+    }
+    .print-closing{
+      text-align:center;
+      font-size:10px;
+      text-transform:uppercase;
+    }
+    .print-line{
+      padding:7px 0;
+      border-bottom:1px solid #eee;
+    }
+    .print-line-index{
+      margin-right:10px;
+    }
+
+    @media print{
+    /* Print mode --> hide UI, show receipt template only. */
+      @page{ margin:0; size:auto; }
+      body{ background:#fff; height:auto; overflow:visible; }
+      .layout-grid{ display:none; }
+      /* Printed page margins around the receipt content */
+      #print-area{
+        position:static;
+        left:0;
+        visibility:visible;
+        width:100%;
+        padding:28px 46px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="layout-grid">
+    <section class="narrative-panel">
+      <div class="panel-title">LOST / PRINT NOTE </div>
+      <div class="narrative-block">
+        <div class="narrative-line">I flipped through notes because I could not start.</div>
+        <div class="narrative-line">Now I need one line that can pull me forward.</div>
+        <div class="narrative-line">Maybe if I write it, I can actually begin.</div>
+      </div>
+      <div class="narrative-hint">Type one line. Press enter.</div>
+    </section>
+
+    <section class="print-bed">
+      <div class="crosshair-x"></div>
+      <div class="crosshair-y"></div>
+
+      <header class="print-head">
+        <div class="project-title">NOTE</div>
+        <div class="project-meta">DATE: 02/06/2026</div>
+      </header>
+
+      <main class="print-main">
+        <div class="section-label">
+          MAKE SOME NOTES... IT MIGHT HELP YOU WHEN YOU’RE STUCK.<br>
+          (PRESS ENTER AFTER EACH LINE.)
+        </div>
+
+        <div id="line-list"></div>
+      </main>
+
+      <footer class="print-foot">
+        <span class="prompt">></span>
+        <input id="input" type="text" placeholder="ANYTHING,,, IS OKAY..." autocomplete="off" autofocus>
+
+        <div class="actions">
+          <button id="clear-btn">RESET</button>
+          <button id="print-btn">PRINT</button>
+          <button id="next-btn">NEXT</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+    <!-- Print receipt block. filled in before calling window.print(). -->
+    <div id="print-area">
+    <div class="print-headline">
+      LOST / NOTE<br>
+      DATE: 02/06/2026
+    </div>
+
+    <div class="print-label">CAPTURED LINES:</div>
+    <div id="p-list-container"></div>
+
+    <div class="print-separator"></div>
+
+    <div class="print-closing">
+      KEEP THIS.<br>
+    </div>
+  </div>
+
+  <script>
+    const NEXT_PAGE = "choose.html";
+    const lineList = document.getElementById("line-list");
+    const input = document.getElementById("input");
+    const printMain = document.querySelector(".print-main");
+    const layoutGrid = document.querySelector(".layout-grid");
+    const clearBtn = document.getElementById("clear-btn");
+    const printBtn = document.getElementById("print-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const printContainer = document.getElementById("p-list-container");
+
+    let lineCount = 0;
+
+    function addLine() {
+      const val = input.value.trim();
+      // Ignore empty submission.
+      if (!val) return;
+
+      lineCount++;
+      const num = lineCount < 10 ? `0${lineCount}` : String(lineCount);
+
+      const div = document.createElement("div");
+      div.className = "line-item";
+      const index = document.createElement("div");
+      index.className = "line-index";
+      index.textContent = num;
+      const text = document.createElement("div");
+      text.className = "line-text";
+      text.textContent = val;
+      div.appendChild(index);
+      div.appendChild(text);
+
+      lineList.appendChild(div);
+      input.value = "";
+
+      printMain.scrollTop = printMain.scrollHeight;
+    }
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addLine();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      // Reset current note list but keep same page.
+      lineList.innerHTML = "";
+      lineCount = 0;
+      input.focus();
+    });
+
+    printBtn.addEventListener("click", () => {
+      // Remove all typed lines and reset numbering to 01.
+      printContainer.innerHTML = "";
+
+      const items = document.querySelectorAll(".line-item");
+
+      items.forEach(item => {
+        const idx = item.querySelector(".line-index").innerText;
+        const text = item.querySelector(".line-text").innerText;
+
+        const line = document.createElement("div");
+        line.className = "print-line";
+        const index = document.createElement("span");
+        index.className = "print-line-index";
+        index.textContent = idx;
+        line.appendChild(index);
+        line.appendChild(document.createTextNode(" " + text));
+
+        printContainer.appendChild(line);
+      });
+
+      window.print();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      // fadeout
+      layoutGrid.style.opacity = "0";
+      setTimeout(() => { window.location.href = NEXT_PAGE; }, 900);
+    });
+  </script>
+</body>
+</html>

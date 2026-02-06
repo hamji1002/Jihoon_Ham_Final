@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOST : WALK</title>
+  <style>
+    :root{
+      --bg:#fff;
+      --ink:#111;
+      --dim:#d1d1d1;
+      --world-width:14000px;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+      height:100vh;
+      width:var(--world-width);
+      overflow-x:scroll;
+      overflow-y:hidden;
+      overscroll-behavior:none;
+      cursor:ew-resize;
+    }
+
+    body{
+      -ms-overflow-style:none;
+      scrollbar-width:none;
+    }
+
+    .horizon, #overlay{
+      position:fixed;
+      left:0;
+      width:100vw;
+    }
+
+    .horizon{
+      top:82%;
+      height:1px;
+      background:rgba(0,0,0,0.4);
+      z-index:5;
+    }
+
+    .cluster{
+      position:absolute;
+      bottom:18%;
+      pointer-events:none;
+    }
+
+    .structure{
+      position:absolute;
+      bottom:0;
+      border:1px solid var(--ink);
+      background:transparent;
+    }
+    .structure::before, .structure::after{
+      content:"";
+      position:absolute;
+      background:var(--ink);
+      opacity:0.4;
+    }
+    .structure::before{
+      width:1px;
+      height:110%;
+      top:-5%;
+      left:-5px;
+    }
+    .structure::after{
+      height:1px;
+      width:110%;
+      left:-5px;
+      top:-5px;
+    }
+
+    .structure.near{ border-width:1.5px; z-index:10; }
+    .structure.mid{ border-width:1px; border-color:#666; opacity:0.6; z-index:4; }
+    .structure.far{ border-width:0.5px; border-color:var(--dim); z-index:2; }
+
+    .narrative-space{
+      position:fixed;
+      top:52%;
+      left:0; right:0;
+      height:120px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      pointer-events:none;
+      z-index:50;
+      mix-blend-mode:multiply;
+    }
+
+    .narrative-line{
+      position:absolute;
+      text-align:center;
+      font-size:14px;
+      font-weight:500;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      color:var(--ink);
+      opacity:0;
+      transition:opacity 0.12s linear;
+      background:var(--bg);
+      padding:6px 12px;
+      max-width:min(860px, 92vw);
+      line-height:1.25;
+    }
+
+    .exit-zone{
+      position:absolute;
+      top:0; bottom:0;
+      width:300px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      z-index:100;
+    }
+    .slit{
+      width:1px;
+      height:100px;
+      background:#000;
+      transition:all 0.6s ease;
+    }
+    .exit-zone:hover .slit{ height:400px; width:10px; }
+    .exit-label{
+      position:absolute;
+      top:85%;
+      font-family:monospace;
+      font-size:10px;
+      opacity:0;
+      transition:opacity 0.3s;
+      letter-spacing:0.18em;
+      text-transform:uppercase;
+    }
+    .exit-zone:hover .exit-label{ opacity:1; }
+
+    #overlay{
+      height:100vh;
+      background:#fff;
+      z-index:1000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:opacity 1.2s ease;
+      cursor:pointer;
+    }
+    .start-text{
+      font-family:monospace;
+      font-size:10px;
+      letter-spacing:0.3em;
+      text-transform:uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="horizon"></div>
+
+  <div id="overlay">
+    <div class="start-text">I left my room - Came for a Walk</div>
+  </div>
+
+  <div id="structures-layer"></div>
+  <div class="narrative-space" id="narrative-space"></div>
+
+  <div class="exit-zone" id="exit-zone">
+    <div class="slit"></div>
+    <div class="exit-label">BACK TO ROOM</div>
+  </div>
+
+  <script>
+    const NEXT_PAGE = "music.html";
+    const shapeLayer = document.getElementById("structures-layer");
+    const roomGate = document.getElementById("exit-zone");
+    const startScreen = document.getElementById("overlay");
+    const narrativeStage = document.getElementById("narrative-space");
+    const worldWidth = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue("--world-width"),
+      10
+    );
+    const narrativeNodes = [];
+
+    const narrativeLines = [
+      { text: "I CAME OUT FOR A WALK BECAUSE I COULDN'T CLICK ANY MORE.", x: 900 },
+      { text: "I SAW A BILLION REFERENCES. I STILL DON’T KNOW WHAT TO DO.", x: 3300 },
+      { text: "NOTHING IN MIND. JUST WALKING.", x: 6100 },
+      { text: "I KEEP WAITING FOR SOMETHING...LIKE..SHAPE.. TO APPEAR IN MY MIND", x: 8900 },
+      { text: "NOTHING. I'LL GO BACK TO MY ROOM AND PUT ON SOME MUSIC.", x: 11600 }
+    ];
+
+    const bgm = new Audio("assets/2.mp3");
+    bgm.loop = true;
+    bgm.volume = 0.4;
+
+    const randomRange = (min, max) => Math.random() * (max - min) + min;
+
+    function addNarrativeLines(){
+      // animate opacity while scrolling.
+      narrativeLines.forEach((t, i) => {
+        const div = document.createElement("div");
+        div.className = "narrative-line";
+        div.textContent = t.text;
+        div.id = `narrative-${i}`;
+        narrativeStage.appendChild(div);
+        narrativeNodes.push(div);
+      });
+    }
+
+    function drawScene(){
+      // Place the exit near the far end of the horizontal world.
+      roomGate.style.left = (worldWidth - 500) + "px";
+
+      // Scatter building groups with slight randomness so each run feels organic.
+      for (let i = 800; i < worldWidth - 1000; i += randomRange(600, 1200)) {
+        buildingBox(i, "near");
+        if (Math.random() > 0.5) buildingBox(i + 300, "mid");
+        if (Math.random() > 0.3) buildingBox(i - 200, "far");
+      }
+    }
+
+    function buildingBox(startX, type){
+      const cluster = document.createElement("div");
+      cluster.className = `cluster ${type}`;
+      cluster.style.left = `${startX}px`;
+
+      const rects = Math.floor(randomRange(1, 4));
+      for (let j = 0; j < rects; j++) {
+        const s = document.createElement("div");
+        s.className = `structure ${type}`;
+        const w = randomRange(50, 400);
+        const h = randomRange(100, 600);
+        const xOffset = randomRange(-100, 100);
+        s.style.width = `${w}px`;
+        s.style.height = `${h}px`;
+        s.style.left = `${xOffset}px`;
+        cluster.appendChild(s);
+      }
+      shapeLayer.appendChild(cluster);
+    }
+
+    function driftNarrative(){
+      const scrollX = window.scrollX;
+
+      // Each line fades in around its own 참조점 in x asxis and fades out as move away.
+      narrativeLines.forEach((t, i) => {
+        const el = narrativeNodes[i];
+        const dist = Math.abs(scrollX - t.x);
+        const fadeRange = 820;
+        const opacity = 1 - (dist / fadeRange);
+
+        el.style.opacity = opacity.toFixed(3);
+      });
+
+      requestAnimationFrame(driftNarrative);
+    }
+
+    addNarrativeLines();
+    drawScene();
+    driftNarrative();
+
+    startScreen.addEventListener("click", () => {
+      // Start audio only after click. then clear the intro layer.
+      bgm.play();
+      startScreen.style.opacity = 0;
+      setTimeout(() => startScreen.remove(), 1200);
+    });
+
+    window.addEventListener("wheel", (e) => {
+      //  wheel movement into horizontal walk movement
+      const delta = e.deltaX + e.deltaY;
+      window.scrollBy({ left: delta, behavior: "auto" });
+    });
+
+    function returnToRoom(){
+      // audio and visuals fadeout before switching pages.
+      const fadeOut = setInterval(() => {
+        if (bgm.volume > 0.05) bgm.volume -= 0.05;
+        else { bgm.pause(); clearInterval(fadeOut); }
+      }, 100);
+
+      document.body.style.transition = "opacity 2s ease";
+      document.body.style.opacity = 0;
+      setTimeout(() => { window.location.href = NEXT_PAGE; }, 2000);
+    }
+
+    roomGate.addEventListener("click", returnToRoom);
+  </script>
+</body>
+</html>

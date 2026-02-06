@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOST : READ</title>
+  <style>
+    :root{
+      --bg: #000;
+      --ink: #fff;
+      --dim: rgba(255,255,255,0.45);
+      --line: rgba(255,255,255,0.15);
+
+      --paper: #f4f4f4;
+      --paper-ink: #000;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .scan-layout{
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 4fr 8fr;
+      padding: 20px;
+      gap: 20px;
+      transition: transform 900ms ease;
+      will-change: transform;
+    }
+
+    .narrative-panel{
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid var(--line);
+      transition: opacity 700ms ease, transform 900ms ease;
+      will-change: opacity, transform;
+    }
+
+    .panel-title{
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 30px;
+    }
+
+    .narrative-block{
+      font-size: clamp(16px, 1.5vw, 22px);
+      font-weight: 300;
+      line-height: 1.4;
+      max-width: 380px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .reveal-line {
+      opacity: 0;
+      transform: translateY(8px);
+      animation: lineFadeIn 1s ease forwards;
+    }
+    @keyframes lineFadeIn { to { opacity: 1; transform: translateY(0); } }
+    .reveal-1 { animation-delay: 0.2s; }
+    .reveal-2 { animation-delay: 1.5s; }
+    .reveal-3 { animation-delay: 3s; }
+    .reveal-4 { animation-delay: 4.5s; }
+
+    .scan-hint{
+      margin-top: 40px;
+      font-family: "Courier New", monospace;
+      font-size: 11px;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.5; } }
+
+    .scan-bed {
+      background: var(--paper);
+      position: relative;
+      cursor: crosshair;
+      overflow: hidden;
+      background-image: linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+      background-size: 20px 20px;
+      transition: transform 900ms ease, border-radius 900ms ease, box-shadow 900ms ease;
+      will-change: transform;
+    }
+
+    .scan-footer {
+      position: absolute;
+      bottom: 20px; left: 20px; right: 20px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .scan-note {
+      position: absolute;
+      max-width: 60%;
+      color: var(--paper-ink);
+      font-weight: 700;
+      font-size: 22px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .scan-note.cover-page {
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      line-height: 1.8;
+      color: #333;
+      max-width: none;
+      padding: 0;
+      text-align: left;
+    }
+
+    .print-queue-btn {
+      pointer-events: auto;
+      background: #000;
+      color: #fff;
+      border: 1px solid #000;
+      padding: 10px 20px;
+      font-family: "Courier New", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.4s, transform 0.4s;
+      transform: translateY(2px);
+    }
+    .print-queue-btn.visible { opacity: 1; transform: translateY(0); }
+    .print-queue-btn:hover { background: #fff; color: #000; }
+
+    .crosshair-x, .crosshair-y {
+      position: absolute;
+      background: rgba(0,0,0,0.05);
+      pointer-events: none;
+    }
+    .crosshair-x { top: 50%; left: 0; width: 100%; height: 1px; }
+    .crosshair-y { top: 0; left: 50%; width: 1px; height: 100%; }
+
+    .scan-flash {
+      position: fixed; inset: 0;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: opacity 350ms ease;
+    }
+
+    body.leaving .narrative-panel{
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    body.leaving .scan-bed{
+      transform: scale(1.04);
+      box-shadow: 0 30px 120px rgba(0,0,0,0.25);
+      border-radius: 6px;
+      cursor: default;
+    }
+    body.leaving .scan-layout{
+      transform: scale(1.01);
+    }
+    body.leaving .scan-hint{
+      opacity: 0.2;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="scan-flash" id="scan-flash"></div>
+
+  <div class="scan-layout">
+    <section class="narrative-panel">
+      <div class="panel-title">LOST / NOTES</div>
+      <div class="narrative-block">
+        <div class="reveal-line reveal-1">I can’t figure out what to do.</div>
+        <div class="reveal-line reveal-2">I went for a walk.</div>
+        <div class="reveal-line reveal-3">I listened to some random music.</div>
+        <div class="reveal-line reveal-4">Now, I flip through my old notes, and.. maybe.. write more.</div>
+      </div>
+      <div class="scan-hint">Click to view next page →</div>
+    </section>
+
+    <section class="scan-bed" id="scan-bed">
+      <div class="crosshair-x"></div>
+      <div class="crosshair-y"></div>
+
+      <div class="scan-note" id="scan-note"></div>
+
+      <div class="scan-footer">
+        <button class="print-queue-btn" id="print-queue-btn">Write Notes →</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const scanBed = document.getElementById("scan-bed");
+    const scanNote = document.getElementById("scan-note");
+    const printQueueBtn = document.getElementById("print-queue-btn");
+    const scanFlash = document.getElementById("scan-flash");
+    const NEXT_PAGE = "print.html";
+
+    // 첫장 +. 컨텐츠
+    const NOTE_PAGES = 
+    [`JIHOON'S NOTEBOOK
+        401-318-7237
+
+        ARCHIVE DATE:
+        JANUARY 2022
+      
+        [FLIP TO SCAN CONTENTS]`,
+              "can you please please please please start with circulation, not form.",
+              "Sauna??.\nSwimming Pool?.",
+              "Compression in spherical forms??? maybe just do cylinder",
+              "use photo of falling cement block as a starting point.",
+              "Keep one wall misaligned. if she hates it.. i donno",
+              "doors can get smaller,, im not that tall",
+              "Motion blur is evidence of time - hmm way too deep",
+              "rhino.... stairs... stem??.",
+              "Light as a material references??",
+              "Model by 1:50.\nhave to finish it",
+              "do i really need to make a toilet for sauna",
+              "maybe not",
+              "Roof line should feel inevitable",
+              "tf is wrong about my datum,,"
+            ];
+
+    let pageIndex = 0;
+    const PAGE_TOTAL = NOTE_PAGES.length;
+    let writeNotesUnlocked = false;
+
+    renderScanPage();
+
+    function renderScanPage() {
+      const currentPage = NOTE_PAGES[pageIndex];
+      // Preserve line breaks 
+      scanNote.innerHTML = currentPage.replace(/\n/g, "<br>");
+
+      if (pageIndex === 0) {
+        // Cover page text stays in a fixed position
+        scanNote.classList.add('cover-page');
+        scanNote.style.top = "15%";
+        scanNote.style.left = "12%";
+      } else {
+        scanNote.classList.remove('cover-page');
+
+        // other contents random positioned. 
+        const randomTop = 15 + Math.random() * 55;
+        const randomLeft = 10 + Math.random() * 30;
+        scanNote.style.top = `${randomTop}%`;
+        scanNote.style.left = `${randomLeft}%`;
+      }
+
+      // show 다음장 버튼 once the last page has been reached
+      if (pageIndex === PAGE_TOTAL - 1) writeNotesUnlocked = true;
+      if (writeNotesUnlocked) printQueueBtn.classList.add("visible");
+      else printQueueBtn.classList.remove("visible");
+    }
+
+    scanBed.addEventListener("mousedown", (e) => {
+      // prevent button click triggering page-turn.
+      if (e.target === printQueueBtn) return;
+
+      // Move through pages, loop back to the start.
+      if (pageIndex < PAGE_TOTAL - 1) {
+        pageIndex++;
+      } else {
+        pageIndex = 0;
+      }
+      renderScanPage();
+    });
+
+    printQueueBtn.addEventListener("click", () => {
+      // Flash + fade to transition to next page.
+      document.body.classList.add("leaving");
+
+      scanFlash.style.opacity = "1";
+      setTimeout(() => { scanFlash.style.opacity = "0"; }, 260);
+
+      document.body.style.transition = "opacity 650ms ease";
+      setTimeout(() => { document.body.style.opacity = "0"; }, 250);
+
+      setTimeout(() => {
+        window.location.href = NEXT_PAGE;
+      }, 950);
+    });
+  </script>
+
+</body>
+</html>
